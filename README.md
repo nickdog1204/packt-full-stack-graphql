@@ -1,5 +1,9 @@
 # Getting Started with Create React App
 
+## the repo for the book [Packt full stack GraphQL](https://learning.oreilly.com/library/view/full-stack-web-development/9781801077880/B17337_04_Final_ASB_ePub.xhtml#_idParaDest-91)
+
+# ==============================
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
