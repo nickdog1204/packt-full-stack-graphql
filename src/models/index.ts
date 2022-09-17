@@ -9,6 +9,18 @@ export interface IUser {
     username: string;
 }
 
-export interface IPostsResponse {
-    posts: [IPost];
+export interface IQueryPostsResponse {
+    posts: IPost[];
+}
+
+export interface IPostInput {
+    text: string;
+}
+
+export interface IAddOnePostVariables {
+    postInput: IPostInput
+}
+
+export interface IAddOnePostResponse {
+    addPost: IPost
 }

@@ -1,7 +1,7 @@
 import React, {FormEvent, FormEventHandler, useState} from 'react';
 import logo from './logo.svg';
-import {IPost, IPostsResponse} from "./models";
-import {gql, useQuery} from "@apollo/client";
+import {IAddOnePostResponse, IAddOnePostVariables, IPost, IQueryPostsResponse} from "./models";
+import {ApolloCache, ApolloClient, DefaultContext, gql, useMutation, useQuery} from "@apollo/client";
 
 const GET_POSTS = gql`
     query getAllPosts {
@@ -14,34 +14,53 @@ const GET_POSTS = gql`
             }
         }
     }
+`;
+
+const ADD_POST = gql`
+    mutation addOnePost($postInput: PostInput!) {
+        addPost(post: $postInput) {
+            id
+            text
+            user {
+                avatar
+                username
+            }
+        }
+    }
 `
 
 function Feed() {
-    const {data, error, loading} = useQuery<IPostsResponse>(GET_POSTS);
+    const {data, error, loading} = useQuery<IQueryPostsResponse>(GET_POSTS);
+    const [addOnePost] =
+        useMutation<IAddOnePostResponse, IAddOnePostVariables, DefaultContext, ApolloCache<boolean>>(ADD_POST, {
+            update: (cache, {data}) => {
+                if (!data) {
+                    console.log('EMMMPPPPPTYYYYY DATA')
+                    return <p>EMMMPTTTTY DATA</p>
+                }
+                const {addPost} = data;
+
+                const {posts} = cache.readQuery<IQueryPostsResponse>({query: GET_POSTS})!;
+                const newData: IQueryPostsResponse = {posts: [addPost, ...posts]}
+                cache.writeQuery<IQueryPostsResponse>({query: GET_POSTS, data: newData});
+            }
+        });
     const [postContent, setPostContent] = useState('');
-    if(!data) {
+    if (!data) {
         return (
             <p>No data</p>
         )
     }
     const {posts} = data;
-    console.log({posts});
 
 
-    const submitHandler: FormEventHandler<HTMLFormElement> = (event) => {
+    const submitHandler: FormEventHandler<HTMLFormElement> = async (event) => {
         event.preventDefault();
-        // setPosts(prevState => {
-        //     const newPost: IPost = {
-        //         id: prevState.length + 1,
-        //         text: postContent,
-        //         user: {
-        //             avatar: '/uploads/avatar1.png',
-        //             username: '測試用戶'
-        //         }
-        //     }
-        //
-        //     return [newPost, ...prevState]
-        // })
+        const addOnePostVariables: IAddOnePostVariables = {
+            postInput: {text: postContent}
+        }
+        const {data} = await addOnePost({variables: addOnePostVariables})
+        const {addPost} = data!;
 
 
         setPostContent('');

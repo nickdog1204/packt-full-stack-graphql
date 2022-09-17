@@ -56,10 +56,10 @@ module.exports = function resolvers() {
                 await Promise.all([
                     newPost.setUser(usersRow.id),
                 ])
-                logger.log({
-                    level: 'info',
-                    message: 'Post was created',
-                })
+                // logger.log({
+                //     level: 'info',
+                //     message: 'Post was created',
+                // })
                 return newPost;
             },
             async addChat(root, {chat}, context) {
@@ -67,10 +67,10 @@ module.exports = function resolvers() {
                 await Promise.all([
                     newChat.setUsers(chat.userIds)
                 ])
-                logger.log({
-                    level: 'info',
-                    message: 'New chat was created'
-                })
+                // logger.log({
+                //     level: 'info',
+                //     message: 'New chat was created'
+                // })
                 return newChat;
             },
             async addMessage(root, {message}, context) {
@@ -82,10 +82,10 @@ module.exports = function resolvers() {
                     newMessage.setUser(firstUserRow.id),
                     newMessage.setChat(message.chatId)
                 ])
-                logger.log({
-                    level: 'info',
-                    message: 'New message was created'
-                })
+                // logger.log({
+                //     level: 'info',
+                //     message: 'New message was created'
+                // })
                 return newMessage;
 
             }
