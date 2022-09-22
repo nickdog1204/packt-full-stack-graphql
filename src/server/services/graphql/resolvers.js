@@ -60,6 +60,7 @@ module.exports = function resolvers() {
                 //     level: 'info',
                 //     message: 'Post was created',
                 // })
+                await new Promise(resolve => setTimeout(resolve, 2000))
                 return newPost;
             },
             async addChat(root, {chat}, context) {

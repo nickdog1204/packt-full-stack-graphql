@@ -2,6 +2,7 @@ import React, {FormEvent, FormEventHandler, useState} from 'react';
 import logo from './logo.svg';
 import {IAddOnePostResponse, IAddOnePostVariables, IPost, IQueryPostsResponse} from "./models";
 import {ApolloCache, ApolloClient, DefaultContext, gql, useMutation, useQuery} from "@apollo/client";
+import {fragments} from "./apollo/fragments";
 
 const GET_POSTS = gql`
     query getAllPosts {
@@ -30,7 +31,9 @@ const ADD_POST = gql`
 `
 
 function Feed() {
-    const {data, error, loading} = useQuery<IQueryPostsResponse>(GET_POSTS);
+    const {data, error, loading} = useQuery<IQueryPostsResponse>(GET_POSTS, {
+        pollInterval: 5000
+    });
     const [addOnePost] =
         useMutation<IAddOnePostResponse, IAddOnePostVariables, DefaultContext, ApolloCache<boolean>>(ADD_POST, {
             update: (cache, {data}) => {
@@ -40,9 +43,36 @@ function Feed() {
                 }
                 const {addPost} = data;
 
-                const {posts} = cache.readQuery<IQueryPostsResponse>({query: GET_POSTS})!;
-                const newData: IQueryPostsResponse = {posts: [addPost, ...posts]}
-                cache.writeQuery<IQueryPostsResponse>({query: GET_POSTS, data: newData});
+                // const {posts} = cache.readQuery<IQueryPostsResponse>({query: GET_POSTS})!;
+                // const newData: IQueryPostsResponse = {posts: [addPost, ...posts]}
+                // cache.writeQuery<IQueryPostsResponse>({query: GET_POSTS, data: newData});
+
+                cache.modify({
+                    fields: {
+                        posts(existingPosts = []) {
+                            const newPostRef = cache.writeFragment({
+                                data: addPost,
+                                fragment: fragments.newPostFragment
+                            });
+                            return [newPostRef, ...existingPosts]
+                        }
+                    }
+                })
+            },
+            optimisticResponse: (vars) => {
+                return {
+                    __typename: 'mutation',
+                    addPost: {
+                        __typename: 'Post',
+                        text: vars.postInput.text,
+                        id: -1,
+                        user: {
+                            __typename: 'User',
+                            avatar: '/uploads/loader-ripple.svg',
+                            username: 'Loadiiiing'
+                        }
+                    }
+                }
             }
         });
     const [postContent, setPostContent] = useState('');
@@ -61,6 +91,7 @@ function Feed() {
         }
         const {data} = await addOnePost({variables: addOnePostVariables})
         const {addPost} = data!;
+        console.log({addPost});
 
 
         setPostContent('');
@@ -90,7 +121,7 @@ function Feed() {
             <div className="feed">
                 {posts.map((post, idx) => {
                     return (
-                        <div key={post.id} className="post">
+                        <div key={post.id} className={"post" + (post.id < 0 ? " optimistic" : "")}>
                             <div className="header">
                                 <img src={post.user.avatar} alt={post.user.username}/>
                                 <h2>{post.user.username}</h2>
