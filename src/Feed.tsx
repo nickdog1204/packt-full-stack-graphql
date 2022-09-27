@@ -1,21 +1,44 @@
 import React, {FormEvent, FormEventHandler, useState} from 'react';
 import logo from './logo.svg';
-import {IAddOnePostResponse, IAddOnePostVariables, IPost, IQueryPostsResponse} from "./models";
+import {
+    IAddOnePostResponse,
+    IAddOnePostVariables,
+    IPost,
+    IQueryPostsFeedResponse,
+    IQueryPostsFeedVariables,
+    IQueryPostsResponse
+} from "./models";
 import {ApolloCache, ApolloClient, DefaultContext, gql, useMutation, useQuery} from "@apollo/client";
 import {fragments} from "./apollo/fragments";
+import InfiniteScroll from "react-infinite-scroll-component";
 
+// const GET_POSTS = gql`
+//     query getAllPosts {
+//         posts {
+//             id
+//             text
+//             user {
+//                 avatar
+//                 username
+//             }
+//         }
+//     }
+// `;
 const GET_POSTS = gql`
-    query getAllPosts {
-        posts {
-            id
-            text
-            user {
-                avatar
-                username
+    query getPostsFeed($pageNum: Int, $pageSize: Int) {
+        postsFeed(pageNum: $pageNum, pageSize: $pageSize) {
+            posts {
+                id
+                text
+                user {
+                    avatar
+                    username
+                }
             }
+
         }
     }
-`;
+`
 
 const ADD_POST = gql`
     mutation addOnePost($postInput: PostInput!) {
@@ -31,8 +54,16 @@ const ADD_POST = gql`
 `
 
 function Feed() {
-    const {data, error, loading} = useQuery<IQueryPostsResponse>(GET_POSTS, {
-        pollInterval: 5000
+    const [hasMore, setHasMore] = useState(true);
+    const [pageNum, setPageNum] = useState(0);
+    const variables: IQueryPostsFeedVariables = {
+        pageNum: 0,
+        pageSize: 10
+    }
+
+    const {data, error, loading, fetchMore} = useQuery<IQueryPostsFeedResponse, IQueryPostsFeedVariables>(GET_POSTS, {
+        pollInterval: 5000,
+        variables
     });
     const [addOnePost] =
         useMutation<IAddOnePostResponse, IAddOnePostVariables, DefaultContext, ApolloCache<boolean>>(ADD_POST, {
@@ -49,12 +80,16 @@ function Feed() {
 
                 cache.modify({
                     fields: {
-                        posts(existingPosts = []) {
+                        postsFeed(existingPostsFeed) {
+                            const {posts: existingPosts} = existingPostsFeed;
                             const newPostRef = cache.writeFragment({
                                 data: addPost,
                                 fragment: fragments.newPostFragment
                             });
-                            return [newPostRef, ...existingPosts]
+                            return {
+                                ...existingPostsFeed,
+                                posts: [newPostRef, ...existingPosts]
+                            }
                         }
                     }
                 })
@@ -67,6 +102,7 @@ function Feed() {
                         text: vars.postInput.text,
                         id: -1,
                         user: {
+                            id: -1,
                             __typename: 'User',
                             avatar: '/uploads/loader-ripple.svg',
                             username: 'Loadiiiing'
@@ -81,7 +117,38 @@ function Feed() {
             <p>No data</p>
         )
     }
-    const {posts} = data;
+    const {postsFeed: {posts}} = data;
+    const loadMore = (fetchMore: any) => {
+        // @ts-ignore
+        // const self = this;
+
+        // @ts-ignore
+        fetchMore({
+            variables: {
+                pageNum: pageNum + 1,
+            },
+            updateQuery(previousResult: any, data: any) {
+                const {fetchMoreResult} = data;
+                if(!fetchMoreResult.postsFeed.posts.length) {
+                    setHasMore(false);
+                    return previousResult;
+                }
+
+                setPageNum(pageNum + 1);
+
+                const newData = {
+                    postsFeed: {
+                        __typename: 'PostFeed',
+                        posts: [
+                            ...previousResult.postsFeed.posts,
+                            ...fetchMoreResult.postsFeed.posts
+                        ]
+                    }
+                };
+                return newData;
+            }
+        });
+    }
 
 
     const submitHandler: FormEventHandler<HTMLFormElement> = async (event) => {
@@ -119,20 +186,27 @@ function Feed() {
                 </form>
             </div>
             <div className="feed">
-                {posts.map((post, idx) => {
-                    return (
-                        <div key={post.id} className={"post" + (post.id < 0 ? " optimistic" : "")}>
-                            <div className="header">
-                                <img src={post.user.avatar} alt={post.user.username}/>
-                                <h2>{post.user.username}</h2>
-                            </div>
-                            <p className="content">
-                                {post.text}
-                            </p>
+                <InfiniteScroll
+                    next={() => loadMore(fetchMore)}
+                    hasMore={hasMore}
+                    loader={<div className="loader" key="loader">Loading</div>}
+                    dataLength={posts.length}>
+                    {posts.map((post, idx) => {
+                        return (
+                            <div key={post.id} className={"post" + (post.id < 0 ? " optimistic" : "")}>
+                                <div className="header">
+                                    <img src={post.user.avatar} alt={post.user.username}/>
+                                    <h2>{post.user.username}</h2>
+                                </div>
+                                <p className="content">
+                                    {post.text}
+                                </p>
 
-                        </div>
-                    )
-                })}
+                            </div>
+                        )
+                    })}
+                </InfiniteScroll>
+
             </div>
         </div>
     );

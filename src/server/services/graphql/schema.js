@@ -21,12 +21,17 @@ const typeDefs = gql`
         id: Int
         messages: [Message]
         users: [User]
+        lastMessage: Message
     }
 
     type RootQuery {
         posts: [Post]
+        postsFeed(pageNum: Int, pageSize: Int): PostFeed
         chats: [Chat]
-        chat(chatId: Int): Chat
+        chat(chatId: Int!): Chat
+    }
+    type PostFeed {
+        posts: [Post]
     }
 
     input PostInput {

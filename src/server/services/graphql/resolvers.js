@@ -9,6 +9,23 @@ module.exports = function resolvers() {
             posts(root, args, context) {
                 return Post.findAll({order: [['createdAt', 'DESC']]});
             },
+            async postsFeed(root, {pageNum, pageSize}, context) {
+                let skip = 0;
+                if(pageNum && pageSize) {
+                    skip = pageNum * pageSize;
+                }
+                const query = {
+                    order: [['createdAt', 'DESC']],
+                    offset: skip
+                }
+                if(pageSize) {
+                    query.limit = pageSize
+                }
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                return {
+                    posts: Post.findAll(query)
+                }
+            },
             async chats(root, args, context) {
                 const users = await User.findAll();
                 if (!users.length) {
@@ -110,7 +127,15 @@ module.exports = function resolvers() {
             },
             async users(chat, args, context) {
                 return chat.getUsers();
+            },
+            async lastMessage(chat, args, context) {
+                const messages = await chat.getMessages({
+                    limit: 1,
+                    order: [['id', 'DESC']]
+                })
+                return messages[0];
             }
+
         }
     };
     return resolvers;

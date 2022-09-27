@@ -5,7 +5,8 @@ import link from "./links";
 
 const client = new ApolloClient({
     link,
-    cache: new InMemoryCache()
+    cache: new InMemoryCache(),
+    connectToDevTools: true
 })
 
 
