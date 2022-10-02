@@ -1,4 +1,4 @@
-import React, {FormEvent, FormEventHandler, useState} from 'react';
+import React, {FormEvent, FormEventHandler, useRef, useState} from 'react';
 import logo from './logo.svg';
 import {
     IAddOnePostResponse,
@@ -11,6 +11,11 @@ import {
 import {ApolloCache, ApolloClient, DefaultContext, gql, useMutation, useQuery} from "@apollo/client";
 import {fragments} from "./apollo/fragments";
 import InfiniteScroll from "react-infinite-scroll-component";
+import Loading from "./components/Loading";
+import Error from "./components/Error";
+import Post from "./components/post";
+import {GET_POSTS_WITH_PAGE_NUM_AND_PAGE_SIZE} from "./apollo/queries/getPosts";
+import {useAddPostMutation} from "./apollo/mutations/addPost";
 
 // const GET_POSTS = gql`
 //     query getAllPosts {
@@ -61,57 +66,29 @@ function Feed() {
         pageSize: 10
     }
 
-    const {data, error, loading, fetchMore} = useQuery<IQueryPostsFeedResponse, IQueryPostsFeedVariables>(GET_POSTS, {
+    const {
+        data,
+        error,
+        loading,
+        fetchMore
+    } = useQuery<IQueryPostsFeedResponse, IQueryPostsFeedVariables>(GET_POSTS_WITH_PAGE_NUM_AND_PAGE_SIZE, {
         pollInterval: 5000,
         variables
     });
-    const [addOnePost] =
-        useMutation<IAddOnePostResponse, IAddOnePostVariables, DefaultContext, ApolloCache<boolean>>(ADD_POST, {
-            update: (cache, {data}) => {
-                if (!data) {
-                    console.log('EMMMPPPPPTYYYYY DATA')
-                    return <p>EMMMPTTTTY DATA</p>
-                }
-                const {addPost} = data;
-
-                // const {posts} = cache.readQuery<IQueryPostsResponse>({query: GET_POSTS})!;
-                // const newData: IQueryPostsResponse = {posts: [addPost, ...posts]}
-                // cache.writeQuery<IQueryPostsResponse>({query: GET_POSTS, data: newData});
-
-                cache.modify({
-                    fields: {
-                        postsFeed(existingPostsFeed) {
-                            const {posts: existingPosts} = existingPostsFeed;
-                            const newPostRef = cache.writeFragment({
-                                data: addPost,
-                                fragment: fragments.newPostFragment
-                            });
-                            return {
-                                ...existingPostsFeed,
-                                posts: [newPostRef, ...existingPosts]
-                            }
-                        }
-                    }
-                })
-            },
-            optimisticResponse: (vars) => {
-                return {
-                    __typename: 'mutation',
-                    addPost: {
-                        __typename: 'Post',
-                        text: vars.postInput.text,
-                        id: -1,
-                        user: {
-                            id: -1,
-                            __typename: 'User',
-                            avatar: '/uploads/loader-ripple.svg',
-                            username: 'Loadiiiing'
-                        }
-                    }
-                }
-            }
-        });
-    const [postContent, setPostContent] = useState('');
+    const [addOnePost] = useAddPostMutation();
+    const textAreaRef = useRef<HTMLTextAreaElement>(null);
+    if (loading) {
+        return (
+            <Loading/>
+        )
+    }
+    if (error) {
+        return (
+            <Error>
+                <p>錯誤了 {error.message}</p>
+            </Error>
+        )
+    }
     if (!data) {
         return (
             <p>No data</p>
@@ -129,7 +106,7 @@ function Feed() {
             },
             updateQuery(previousResult: any, data: any) {
                 const {fetchMoreResult} = data;
-                if(!fetchMoreResult.postsFeed.posts.length) {
+                if (!fetchMoreResult.postsFeed.posts.length) {
                     setHasMore(false);
                     return previousResult;
                 }
@@ -153,33 +130,22 @@ function Feed() {
 
     const submitHandler: FormEventHandler<HTMLFormElement> = async (event) => {
         event.preventDefault();
+        const cur = textAreaRef.current
+        const curVal = cur?.value
+        console.log({cur, curVal})
         const addOnePostVariables: IAddOnePostVariables = {
-            postInput: {text: postContent}
+            postInput: {text: curVal || ''}
         }
         const {data} = await addOnePost({variables: addOnePostVariables})
+        textAreaRef.current!.value = '';
         const {addPost} = data!;
-        console.log({addPost});
-
-
-        setPostContent('');
-    }
-    if (loading) {
-        return <p>LOAAAADIIIIIINGGGGG</p>
-    }
-    if (error) {
-        return (
-            <p>Error {error.message}</p>
-        )
     }
     return (
         <div className="container">
             <div className="postForm">
                 <form onSubmit={submitHandler}>
                     <textarea
-                        value={postContent}
-                        onChange={(e) => {
-                            setPostContent(e.target.value);
-                        }}
+                        ref={textAreaRef}
                         placeholder="寫下你的文章!!"
                     />
                     <input type="submit" value="送出"/>
@@ -193,16 +159,7 @@ function Feed() {
                     dataLength={posts.length}>
                     {posts.map((post, idx) => {
                         return (
-                            <div key={post.id} className={"post" + (post.id < 0 ? " optimistic" : "")}>
-                                <div className="header">
-                                    <img src={post.user.avatar} alt={post.user.username}/>
-                                    <h2>{post.user.username}</h2>
-                                </div>
-                                <p className="content">
-                                    {post.text}
-                                </p>
-
-                            </div>
+                            <Post key={post.id} post={post}/>
                         )
                     })}
                 </InfiniteScroll>

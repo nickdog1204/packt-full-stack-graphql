@@ -32,7 +32,7 @@ if ('production' === process.env.NODE_ENV) {
 
 }
 app.use(cors());
-const root = path.join(__dirname, '../../');
+const root = path.join(__dirname, '../');
 
 
 const serviceNames = Object.keys(services);

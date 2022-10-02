@@ -1,4 +1,5 @@
 const logger = require('../../helpers/logger');
+const {Op} = require("sequelize");
 
 
 module.exports = function resolvers() {
@@ -11,14 +12,14 @@ module.exports = function resolvers() {
             },
             async postsFeed(root, {pageNum, pageSize}, context) {
                 let skip = 0;
-                if(pageNum && pageSize) {
+                if (pageNum && pageSize) {
                     skip = pageNum * pageSize;
                 }
                 const query = {
                     order: [['createdAt', 'DESC']],
                     offset: skip
                 }
-                if(pageSize) {
+                if (pageSize) {
                     query.limit = pageSize
                 }
                 await new Promise(resolve => setTimeout(resolve, 2000))
@@ -60,6 +61,37 @@ module.exports = function resolvers() {
 
                     ]
                 })
+
+            },
+            async usersSearch(root, {usersSearchInput}, context) {
+                const {
+                    pageNum, pageSize, text
+                } = usersSearchInput;
+                if (text.length < 3) {
+                    return {
+                        users: []
+                    }
+                }
+                let skip = 0;
+                if (pageNum && pageSize) {
+                    skip = pageNum * pageSize
+                }
+                const query = {
+                    order: [['createdAt', 'DESC']],
+                    offset: skip
+                }
+                if (pageSize) {
+                    query.limit = pageSize
+                }
+                query.where = {
+                    username: {
+                        [Op.like]: '%' + text + '%'
+                    }
+                };
+
+                return {
+                    users: User.findAll(query)
+                }
 
             }
         },
@@ -106,6 +138,34 @@ module.exports = function resolvers() {
                 // })
                 return newMessage;
 
+            },
+            async deletePost(root, {postId}, context) {
+                try {
+                    const numOfDeletedRows = await Post.destroy({
+                        where: {
+                            id: postId
+                        }
+                    });
+                    if (1 === numOfDeletedRows) {
+                        // logger.log({
+                        //     level: 'info',
+                        //     message: 'Post '+ postId + ' was deleted'
+                        // })
+                        return {
+                            success: true
+                        }
+                    } else {
+                        return {
+                            success: false
+                        }
+                    }
+
+                } catch (e) {
+                    // logger.log({
+                    //     level: 'error',
+                    //     message: e.message
+                    // })
+                }
             }
         },
         Post: {

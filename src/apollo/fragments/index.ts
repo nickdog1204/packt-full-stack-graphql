@@ -1,4 +1,5 @@
 import {gql} from "@apollo/client";
+import {USER_ATTRIBUTES} from "./userAttributes";
 
 
 const newPostFragment = gql`
@@ -8,6 +9,6 @@ const newPostFragment = gql`
     }
 `
 
-const fragments = {newPostFragment}
+const fragments = {newPostFragment, USER_ATTRIBUTES}
 
 export {fragments};

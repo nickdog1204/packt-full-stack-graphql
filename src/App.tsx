@@ -5,6 +5,8 @@ import {IPost} from "./models";
 import {Helmet} from 'react-helmet-async';
 import Feed from "./Feed";
 import Chats from "./Chats";
+import './components/fontawesome'
+import Bar from "./components/bar";
 
 function App() {
     return (
@@ -18,6 +20,7 @@ function App() {
 
 
             </Helmet>
+            <Bar/>
             <Feed/>
             <Chats/>
         </div>

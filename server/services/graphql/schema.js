@@ -6,6 +6,9 @@ const typeDefs = gql`
         avatar: String
         username: String
     }
+    type UsersSearchResponse {
+        users: [User]
+    }
     type Post {
         id: Int
         text: String
@@ -23,12 +26,20 @@ const typeDefs = gql`
         users: [User]
         lastMessage: Message
     }
+    input UsersSearchInput {
+        pageNum: Int
+        pageSize: Int,
+        text: String!
+    }
 
     type RootQuery {
         posts: [Post]
         postsFeed(pageNum: Int, pageSize: Int): PostFeed
         chats: [Chat]
         chat(chatId: Int!): Chat
+        usersSearch(
+            usersSearchInput: UsersSearchInput
+        ): UsersSearchResponse
     }
     type PostFeed {
         posts: [Post]
@@ -48,6 +59,9 @@ const typeDefs = gql`
         text: String!
         chatId: Int!
     }
+    type DeletePostResponse {
+        success: Boolean!
+    }
 
     type RootMutation {
         addPost(
@@ -59,6 +73,9 @@ const typeDefs = gql`
         addMessage(
             message: MessageInput!
         ): Message
+        deletePost(
+            postId: Int!
+        ): DeletePostResponse
     }
 
     schema {
