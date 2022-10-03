@@ -1,5 +1,7 @@
 import React from "react";
 import SearchBar from "./searchBar";
+import {UserConsumer} from "../context/user";
+import UserBar from "./userBar";
 
 
 const Bar: React.FC = () => {
@@ -7,6 +9,9 @@ const Bar: React.FC = () => {
         <div className="topbar">
             <div className="inner">
                 <SearchBar/>
+                <UserConsumer>
+                    <UserBar/>
+                </UserConsumer>
             </div>
         </div>
     )
