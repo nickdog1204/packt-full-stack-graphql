@@ -21,11 +21,11 @@ function App() {
 
 
             </Helmet>
-            <UserProvider>
-                <Bar/>
-                <Feed/>
-                <Chats/>
-            </UserProvider>
+            {/*<UserProvider>*/}
+            <Bar/>
+            <Feed/>
+            <Chats/>
+            {/*</UserProvider>*/}
         </div>
     );
 }

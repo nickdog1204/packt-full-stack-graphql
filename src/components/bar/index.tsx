@@ -1,7 +1,7 @@
 import React from "react";
 import SearchBar from "./searchBar";
-import {UserConsumer} from "../context/user";
 import UserBar from "./userBar";
+import {UserConsumer} from "../context/apollo/user";
 
 
 const Bar: React.FC = () => {
